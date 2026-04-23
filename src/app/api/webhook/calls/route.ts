@@ -42,9 +42,10 @@ function calcDuration(conversation: { timestamp?: string }[]): number | null {
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  // 1. Autenticazione via header secret
-  const secret = request.headers.get('x-webhook-secret')
-  if (secret !== process.env.WEBHOOK_SECRET) {
+  // 1. Autenticazione via header secret (opzionale — il runner non lo invia)
+  const expectedSecret = process.env.WEBHOOK_SECRET
+  const receivedSecret = request.headers.get('x-webhook-secret')
+  if (expectedSecret && receivedSecret && receivedSecret !== expectedSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
