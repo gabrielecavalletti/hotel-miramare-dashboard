@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(STAFF)
+  createdAt    DateTime @default(now())
+
+  assignedCalls  Call[]          @relation("AssignedCalls")
+  callNotes      CallNote[]
+  statusChanges  CallStatusLog[]
+}
+
+model Call {
+  id                 String      @id @default(cuid())
+  receivedAt         DateTime    @default(now())
+  status             CallStatus  @default(NEW)
+  leadQuality        LeadQuality @default(WARM)
+  requestType        String?
+  customerName       String
+  customerPhone      String
+  checkIn            DateTime?
+  checkOut           DateTime?
+  guests             Int?
+  nights             Int?
+  roomType           String?
+  notes              String?
+  operationalSummary String?
+  requiredAction     String?
+  rawPayload         String
+  durationSeconds    Int?
+  assignedToId       String?
+  updatedAt          DateTime    @updatedAt
+
+  assignedTo  User?           @relation("AssignedCalls", fields: [assignedToId], references: [id])
+  callNotes   CallNote[]
+  statusLogs  CallStatusLog[]
+}
+
+model CallNote {
+  id        String   @id @default(cuid())
+  callId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  call   Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+}
+
+model CallStatusLog {
+  id          String     @id @default(cuid())
+  callId      String
+  fromStatus  CallStatus
+  toStatus    CallStatus
+  changedById String
+  changedAt   DateTime   @default(now())
+
+  call      Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id])
+}
+
+// Configurazione singleton del bot vocale (una sola riga, id="default")
+model AgentConfig {
+  id          String   @id @default("default")
+  prompt      String
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum CallStatus {
+  NEW
+  TO_CALL_BACK
+  IN_PROGRESS
+  CONFIRMED
+  CANCELLED
+  ARCHIVED
+}
+
+enum LeadQuality {
+  HOT
+  WARM
+  COLD
+}
